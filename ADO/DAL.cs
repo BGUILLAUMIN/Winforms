@@ -189,7 +189,7 @@ namespace ADO
         {
             ListeProduit = new BindingList<Produit>();
             var connecting = Properties.Settings.Default.NorthwindConnectionString;
-            string query = @"SELECT ProductID, ProductName, SupplierId, CategoryID, QuantityPerUnit, ROUND(UnitPrice,2)UnitPrice, UnitsInStock FROM Products ORDER BY 1";
+            string query = @"SELECT ProductID, ProductName, SupplierId, CategoryID, QuantityPerUnit, ROUND(UnitPrice,2)UnitPrice, UnitsInStock FROM Products Where Discontinued = 0 ORDER BY 1";
             using (var connect = new SqlConnection(connecting))
             {
                 var command = new SqlCommand(query, connect);
@@ -313,6 +313,135 @@ Values (@ProductName, @SupplierId, @CategoryID, @QuantityPerUnit, @UnitPrice, @U
                     throw;
                 }
             }
+        }
+
+        public static void InsertEnMasse(List<Produit> ListeProduit)
+        {
+            //Création d'une chaine de connection
+            var connectString = Properties.Settings.Default.NorthwindConnectionString;
+
+            //Création d'un string correspondant à la requête SQL
+            string queryString = @"INSERT Products (ProductName, SupplierId, CategoryId, QuantityPerUnit, UnitPrice, UnitsInStock)
+SELECT ProductName, SupplierId, CategoryId, QuantityPerUnit, UnitPrice, UnitsInStock FROM @MaTable";
+
+            //Création du paramètre de la requete SQL
+            var param = new SqlParameter("@MaTable", SqlDbType.Structured);
+
+            //Appelle de la méthode gérant la création de la table intermédiaire
+            DataTable tableProd = GetDataTableProduit(ListeProduit);
+            param.TypeName = "TypeTableProduit";
+            param.Value = tableProd;
+
+            using (var connect = new SqlConnection(connectString))
+            {
+                connect.Open();
+                SqlTransaction tran = connect.BeginTransaction();
+
+                try
+                {
+                    var command = new SqlCommand(queryString, connect, tran);
+                    command.Parameters.Add(param);
+                    command.ExecuteNonQuery();
+
+                    tran.Commit();
+                }
+                catch (Exception)
+                {
+                    tran.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        public static DataTable GetDataTableProduit(List<Produit> ListeProduit)
+        {
+            //Création d'une table mémoire
+            DataTable table = new DataTable();
+
+            //Création des différentes colonnes
+            //Colonne Nom Produit 
+            var colNom = new DataColumn("Nom Produit", typeof(string));
+            colNom.AllowDBNull = false;
+            table.Columns.Add(colNom);
+            //Colonne ID Fournisseur
+            table.Columns.Add(new DataColumn("ID Fournisseur", typeof(int)));
+            //Colonne ID Categorie
+            table.Columns.Add(new DataColumn("ID Categorie", typeof(int)));
+            //Colonne Quantité par unité
+            table.Columns.Add(new DataColumn("Quantité par unité", typeof(string)));
+            //Colonne Prix unitaire
+            table.Columns.Add(new DataColumn("Prix unitaire", typeof(decimal)));
+            //Colonne Unité en stock
+            table.Columns.Add(new DataColumn("Unité en stock", typeof(int)));
+
+            foreach (var p in ListeProduit)
+            {
+                //Création de chaque ligne de la table, si la valeur est null
+                //alors on écrit une valeur null dans la table de type SQL
+                DataRow ligne = table.NewRow();
+                if (p.ProductName != null) ligne["Nom Produit"] = p.ProductName;
+                else ligne["Nom Produit"] = DBNull.Value;
+                if (p.SupplierID != 0) ligne["ID Fournisseur"] = p.SupplierID;
+                else ligne["ID Fournisseur"] = DBNull.Value;
+                if (p.CategoryId != 0) ligne["ID Categorie"] = p.CategoryId;
+                else ligne["ID Categorie"] = DBNull.Value;
+                if (p.QuantityPerUnit != null) ligne["Quantité par unité"] = p.QuantityPerUnit;
+                else ligne["Quantité par unité"] = DBNull.Value;
+                if(p.UnitPrice != 0) ligne["Prix unitaire"] = p.UnitPrice;
+                else ligne["Prix unitaire"] = DBNull.Value;
+                if (p.UnitInStock != 0) ligne["Unité en stock"] = p.UnitInStock;
+                else ligne["Unité en stock"] = DBNull.Value;
+
+                //Ajout de ligne dans la table
+                table.Rows.Add(ligne);
+            }
+            return table;
+        }
+
+        public static void DeleteEnMasse(List<Produit> ListeProduit)
+        {
+            var connectString = Properties.Settings.Default.NorthwindConnectionString;
+            string queryString = "Update Products set Discontinued = 1 where ProductID in (Select Id From @ID)";
+            DataTable table = GetDataIDProduit(ListeProduit);
+            var param = new SqlParameter("@ID", SqlDbType.Structured);
+            param.TypeName = "TypeTableIDProduit";
+            param.Value = table;
+
+            using (var connect = new SqlConnection(connectString))
+            {
+                connect.Open();
+                SqlTransaction tran = connect.BeginTransaction();
+
+                try
+                {
+                    var command = new SqlCommand(queryString, connect, tran);
+                    command.Parameters.Add(param);
+                    command.ExecuteNonQuery();
+
+                    tran.Commit();
+                }
+                catch (Exception)
+                {
+                    tran.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        public static DataTable GetDataIDProduit(List<Produit> ListeProduit)
+        {
+            DataTable table = new DataTable();
+            var colID = new DataColumn();
+            colID.AllowDBNull = false;
+            table.Columns.Add(colID);
+            table.PrimaryKey = new DataColumn[] { colID };
+            foreach (var p in ListeProduit)
+            {
+                DataRow ligne = table.NewRow();
+                ligne[0] = p.ProductID;
+                table.Rows.Add(ligne);
+            }
+            return table;
         }
     }
 }

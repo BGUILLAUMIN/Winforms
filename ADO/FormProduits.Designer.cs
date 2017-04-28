@@ -31,6 +31,7 @@
             this.dgvProduits = new System.Windows.Forms.DataGridView();
             this.btnAjouter = new System.Windows.Forms.Button();
             this.btnSuppr = new System.Windows.Forms.Button();
+            this.btnEnregistrer = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProduits)).BeginInit();
             this.SuspendLayout();
             // 
@@ -63,11 +64,21 @@
             this.btnSuppr.Text = "-";
             this.btnSuppr.UseVisualStyleBackColor = true;
             // 
+            // btnEnregistrer
+            // 
+            this.btnEnregistrer.Location = new System.Drawing.Point(124, 12);
+            this.btnEnregistrer.Name = "btnEnregistrer";
+            this.btnEnregistrer.Size = new System.Drawing.Size(168, 35);
+            this.btnEnregistrer.TabIndex = 3;
+            this.btnEnregistrer.Text = "Enregistrer";
+            this.btnEnregistrer.UseVisualStyleBackColor = true;
+            // 
             // FormProduits
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(834, 362);
+            this.Controls.Add(this.btnEnregistrer);
             this.Controls.Add(this.btnSuppr);
             this.Controls.Add(this.btnAjouter);
             this.Controls.Add(this.dgvProduits);
@@ -83,5 +94,6 @@
         private System.Windows.Forms.DataGridView dgvProduits;
         private System.Windows.Forms.Button btnAjouter;
         private System.Windows.Forms.Button btnSuppr;
+        private System.Windows.Forms.Button btnEnregistrer;
     }
 }

@@ -14,14 +14,42 @@ namespace ADO
     public partial class FormProduits : Form
     {
         private BindingList<Produit> _listProduct;
+        private List<Produit> _produitAjoutés;
+        private List<Produit> _produitSupprimés;
         public FormProduits()
         {
             InitializeComponent();
+            _produitAjoutés = new List<Produit>();
+            _produitSupprimés = new List<Produit>();
             btnAjouter.Click += BtnAjouter_Click;
             btnSuppr.Click += BtnSuppr_Click;
+            btnEnregistrer.Click += BtnEnregistrer_Click;
             _listProduct = DAL.GetProduit();
             dgvProduits.DataSource = _listProduct;
             dgvProduits.Columns[0].Visible = false;
+        }
+
+        private void BtnEnregistrer_Click(object sender, EventArgs e)
+        {
+            bool found = false;
+            foreach (var a in _produitAjoutés)
+            {
+                foreach (var b in _produitSupprimés)
+                {
+                    if (a == b)
+                    {
+                        _produitAjoutés.Remove(a);
+                        _produitSupprimés.Remove(b);
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            DAL.InsertEnMasse(_produitAjoutés);
+            DAL.DeleteEnMasse(_produitSupprimés);
+            _listProduct = DAL.GetProduit();
+            dgvProduits.DataSource = _listProduct;
         }
 
         private void BtnSuppr_Click(object sender, EventArgs e)
@@ -30,7 +58,7 @@ namespace ADO
             {
                 var prod = new Produit();
                 prod = (Produit)dgvProduits.CurrentRow.DataBoundItem;
-                DAL.DeleteProduit(prod.ProductID);
+                _produitSupprimés.Add(prod);
                 _listProduct.Remove(prod);
             }
             catch (SqlException d)
@@ -52,8 +80,8 @@ namespace ADO
                 {
                     var produitSaisie = new Produit();
                     produitSaisie = DAL.NouveauProduit(form);
-                    DAL.ListeProduit.Add(produitSaisie);
-                    DAL.AjouterProduit(produitSaisie);
+                    _produitAjoutés.Add(produitSaisie);
+                    _listProduct.Add(produitSaisie);
                 }
             }
         }
