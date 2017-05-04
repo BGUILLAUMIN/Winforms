@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml;
+using System.Xml.Linq;
+using System.Xml.Serialization;
 
 namespace ADO
 {
@@ -303,7 +307,7 @@ Values (@ProductName, @SupplierId, @CategoryID, @QuantityPerUnit, @UnitPrice, @U
                     command.Parameters.Add(param6);
                     command.ExecuteNonQuery();
 
-                    
+
 
                     tran.Commit();
                 }
@@ -387,7 +391,7 @@ SELECT ProductName, SupplierId, CategoryId, QuantityPerUnit, UnitPrice, UnitsInS
                 else ligne["ID Categorie"] = DBNull.Value;
                 if (p.QuantityPerUnit != null) ligne["Quantité par unité"] = p.QuantityPerUnit;
                 else ligne["Quantité par unité"] = DBNull.Value;
-                if(p.UnitPrice != 0) ligne["Prix unitaire"] = p.UnitPrice;
+                if (p.UnitPrice != 0) ligne["Prix unitaire"] = p.UnitPrice;
                 else ligne["Prix unitaire"] = DBNull.Value;
                 if (p.UnitInStock != 0) ligne["Unité en stock"] = p.UnitInStock;
                 else ligne["Unité en stock"] = DBNull.Value;
@@ -443,6 +447,149 @@ SELECT ProductName, SupplierId, CategoryId, QuantityPerUnit, UnitPrice, UnitsInS
             }
             return table;
         }
+
+        public static List<Commande> GetLigneCommande()
+        {
+            var ListeCmd = new List<Commande>();
+            var connectString = Properties.Settings.Default.NorthwindConnectionString;
+            string queryString = @"Select O.OrderID, O.CustomerID, O.OrderDate, OD.* from Orders O inner join Order_Details OD on O.OrderID = OD.OrderID Order by 1";
+
+            using (var connect = new SqlConnection(connectString))
+            {
+                var command = new SqlCommand(queryString, connect);
+                connect.Open();
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        GetLigneCommandeFromDataReader(ListeCmd, reader);
+                    }
+                }
+                return ListeCmd;
+            }
+        }
+
+        public static List<Commande> GetLigneCommandeFromDataReader(List<Commande> ListeCmd, SqlDataReader reader)
+        {
+
+            int cmdID = (int)reader["OrderID"];
+
+            Commande cmd = null;
+
+            if (ListeCmd.Count == 0 || ListeCmd[ListeCmd.Count - 1].OrderId != cmdID)
+            {
+                cmd = new Commande();
+                cmd.OrderId = (int)reader["OrderID"];
+                cmd.CustomerID = (string)reader["CustomerID"];
+                cmd.OrderDate = (DateTime)reader["OrderDate"];
+                cmd.ListeCommande = new List<LigneCommande>();
+                ListeCmd.Add(cmd);
+            }
+            else cmd = ListeCmd[ListeCmd.Count - 1];
+
+            LigneCommande ligneCmd = new LigneCommande();
+            ligneCmd.OrderID = (int)reader["OrderID"];
+            ligneCmd.ProductID = (int)reader["ProductID"];
+            ligneCmd.UnitPrice = (decimal)reader["UnitPrice"];
+            ligneCmd.Quantity = (Int16)reader["Quantity"];
+            ligneCmd.Discount = (float)reader["Discount"];
+
+            cmd.ListeCommande.Add(ligneCmd);
+
+            return ListeCmd;
+        }
+
+        #region Traitement XML
+        /// <summary>
+        /// Serialisation d'une liste de commande en XML
+        /// </summary>
+        /// <param name="listcmd"></param>
+        public static void ExporterXml(List<Commande> listcmd)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(List<Commande>), new XmlRootAttribute("Commandes"));
+
+            using (var sw = new StreamWriter(@"..\..\Commandes.xml"))
+            {
+                serializer.Serialize(sw, listcmd);
+            }
+        }
+        /// <summary>
+        /// Désérialisation d'une liste de commande en XML
+        /// </summary>
+        /// <returns></returns>
+        public static List<Commande> ImporterXml()
+        {
+            List<Commande> listCmd = null;
+            XmlSerializer deserialiser = new XmlSerializer(typeof(List<Commande>), new XmlRootAttribute("Commandes"));
+
+            using (var sr = new StreamReader(@"..\..\Commandes.xml"))
+            {
+                listCmd = (List<Commande>)deserialiser.Deserialize(sr);
+            }
+            return listCmd;
+        }
+        /// <summary>
+        /// Génération d'un fichier XML
+        /// </summary>
+        /// <param name="ListCmd"></param>
+        public static void GenererXML(List<Commande> ListCmd)
+        {
+            XmlWriterSettings settings = new XmlWriterSettings();
+            //Paramètre d'indentation du type tabulation
+            settings.Indent = true;
+            settings.IndentChars = "\t";
+            //Initialisation des variables pour filtrer les doublons
+            int moisCourant = 0;
+            int anneeCourant = 0;
+            var listeTriée = ListCmd.OrderBy(c => c.OrderDate).ToList();
+
+            using (XmlWriter writer = XmlWriter.Create(@"..\..\Commandes_writer.xml", settings))
+            {
+                writer.WriteStartDocument();
+                writer.WriteStartElement("DatesCommandes");
+
+                foreach (Commande cmd in listeTriée)
+                {
+                    if (cmd.OrderDate.Month != moisCourant || cmd.OrderDate.Year != anneeCourant)
+                    {
+                        if (moisCourant != 0) writer.WriteEndElement();
+                        writer.WriteStartElement("DateCommande");
+                        writer.WriteAttributeString("Annee", cmd.OrderDate.Year.ToString());
+                        writer.WriteAttributeString("Mois", cmd.OrderDate.Month.ToString());
+                        moisCourant = cmd.OrderDate.Month;
+                        anneeCourant = cmd.OrderDate.Year;
+                    }
+                    else
+                    {
+                        writer.WriteStartElement("Commande");
+                        writer.WriteAttributeString("Id", cmd.OrderId.ToString());
+                        var montant = cmd.ListeCommande.Sum(l => l.Quantity * l.UnitPrice * (1 - (decimal)l.Discount));
+                        writer.WriteAttributeString("Montant", montant.ToString("000.00"));
+                        writer.WriteEndElement();
+                    }
+                }
+                //writer.WriteEndElement();
+                //writer.WriteEndElement(); 
+                //Ferme les éléments ouverts
+                writer.WriteEndDocument();
+            }
+        } 
+
+        public static List<Commande> Deserialiser()
+        {
+            var ListCmd = new List<Commande>();
+            XDocument doc = XDocument.Load(@"..\..\Commandes_writer.xml");
+
+            foreach (var Cmd in doc.Descendants("Commande").ToList())
+            {
+                
+            }
+
+            return ListCmd;
+        }
+        #endregion
     }
 }
+
 

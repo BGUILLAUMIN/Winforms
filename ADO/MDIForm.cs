@@ -16,8 +16,9 @@ namespace ADO
 
 			// TODO : branchez ici l'ouverture des fenêtres filles sur le clic des menus
 			menu1.Click += (object sender, EventArgs e) => ShowChild("ADO.FormFournisseurs");
-            menu2.Click += (object sender, EventArgs e) => ShowChild("ADO.FormCommandes");
+            menuCommande.Click += (object sender, EventArgs e) => ShowChild("ADO.FormCommandes");
             menu3.Click += (object sender, EventArgs e) => ShowChild("ADO.FormProduits");
+            MenuDetailsCommandes.Click += (object sender, EventArgs e) => ShowChild("ADO.FormLigneCommandes");
         }
 
 		// Affichage d'une fenêtre fille
@@ -69,5 +70,5 @@ namespace ADO
 			menuWindows.DropDownItems.RemoveByKey(f.Name);
 			if (ChildForms.Count == 0) menuWindows.Visible = false;
 		}
-	}
+    }
 }

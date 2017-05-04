@@ -31,8 +31,10 @@
             this.menuGeneral = new System.Windows.Forms.MenuStrip();
             this.menu1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menu2 = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuWindows = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuDetailsCommandes = new System.Windows.Forms.ToolStripMenuItem();
             this.menu3 = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuWindows = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuCommande = new System.Windows.Forms.ToolStripMenuItem();
             this.menuGeneral.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -57,9 +59,24 @@
             // 
             // menu2
             // 
+            this.menu2.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.MenuDetailsCommandes,
+            this.menuCommande});
             this.menu2.Name = "menu2";
-            this.menu2.Size = new System.Drawing.Size(82, 20);
-            this.menu2.Text = "Commande";
+            this.menu2.Size = new System.Drawing.Size(146, 20);
+            this.menu2.Text = "Application Commande";
+            // 
+            // MenuDetailsCommandes
+            // 
+            this.MenuDetailsCommandes.Name = "MenuDetailsCommandes";
+            this.MenuDetailsCommandes.Size = new System.Drawing.Size(178, 22);
+            this.MenuDetailsCommandes.Text = "Détails commandes";
+            // 
+            // menu3
+            // 
+            this.menu3.Name = "menu3";
+            this.menu3.Size = new System.Drawing.Size(63, 20);
+            this.menu3.Text = "Produits";
             // 
             // menuWindows
             // 
@@ -67,11 +84,11 @@
             this.menuWindows.Size = new System.Drawing.Size(63, 20);
             this.menuWindows.Text = "Fenêtres";
             // 
-            // menu3
+            // menuCommande
             // 
-            this.menu3.Name = "menu3";
-            this.menu3.Size = new System.Drawing.Size(63, 20);
-            this.menu3.Text = "Produits";
+            this.menuCommande.Name = "menuCommande";
+            this.menuCommande.Size = new System.Drawing.Size(178, 22);
+            this.menuCommande.Text = "Commande";
             // 
             // MDIForm
             // 
@@ -97,6 +114,8 @@
 		private System.Windows.Forms.ToolStripMenuItem menuWindows;
 		private System.Windows.Forms.ToolStripMenuItem menu2;
         private System.Windows.Forms.ToolStripMenuItem menu3;
+        private System.Windows.Forms.ToolStripMenuItem MenuDetailsCommandes;
+        private System.Windows.Forms.ToolStripMenuItem menuCommande;
     }
 }
 
